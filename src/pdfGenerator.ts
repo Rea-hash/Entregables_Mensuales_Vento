@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { CHECKLISTS, ROLE_DESTINATIONS, ROLE_LABELS } from './data';
+import { CHECKLISTS, ROLE_LABELS } from './data';
 import { BRANDS, type BrandId } from './brands';
 import type { Evidence, SavedReport } from './types';
 
@@ -146,7 +146,7 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
   doc.setFontSize(17);
   doc.text('ENTREGABLES MENSUALES GRUPO VNA', margin, 16);
   doc.setFontSize(10.5);
-  doc.text(`${ROLE_LABELS[report.metadata.role]}  →  ${ROLE_DESTINATIONS[report.metadata.role]}`, margin, 25);
+  doc.text(ROLE_LABELS[report.metadata.role], margin, 25);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.3);
   doc.text(`Checklist mensual de evidencias · ${brand.operationLabel}`, margin, 32);
