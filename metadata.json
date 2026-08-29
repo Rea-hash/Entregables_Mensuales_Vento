@@ -1,4 +1,5 @@
 {
-  "name": "Vento Checklist Mensual",
-  "description": "Checklist mensual de entregables con evidencias, guardado local y exportación a PDF."
+  "name": "Entregables Mensuales Grupo VNA",
+  "description": "Checklist mensual multimarca para Vento y American Piston con evidencias, guardado local y exportación a PDF.",
+  "author": "Josue Sebastian Rea Garcia"
 }

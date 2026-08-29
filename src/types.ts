@@ -1,4 +1,5 @@
 import type { ChecklistRole } from './data';
+import type { BrandId } from './brands';
 
 export type ComplianceStatus = 'pending' | 'complies' | 'not_complies' | 'na';
 export type EvidenceKind = 'image' | 'file' | 'link';
@@ -20,6 +21,7 @@ export interface ItemState {
 }
 
 export interface ReportMetadata {
+  brand: BrandId;
   role: ChecklistRole;
   reporterName: string;
   reportDate: string;

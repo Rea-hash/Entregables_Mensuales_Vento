@@ -1,5 +1,6 @@
 import type { SavedReport } from './types';
 
+// Se conserva el nombre histórico de la base para no perder reportes Vento ya guardados.
 const DB_NAME = 'vento-monthly-evidence';
 const DB_VERSION = 1;
 const STORE = 'reports';
@@ -37,7 +38,9 @@ export async function getReports(): Promise<SavedReport[]> {
     req.onerror = () => reject(req.error);
   });
   db.close();
-  return reports.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return reports
+    .map((report) => ({ ...report, metadata: { ...report.metadata, brand: report.metadata.brand || 'vento' } }))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function deleteReport(id: string): Promise<void> {
