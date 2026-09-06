@@ -6,6 +6,10 @@ export interface ChecklistItem {
   responsible: string;
   periodicity: string;
   delivery: string;
+  /** Entregable preponderante: pondera doble en la calificación (Resumen So's/To's/J's/Po's, Ventas por vendedor). */
+  critical?: boolean;
+  /** Punto puramente informativo: sin status de cumplimiento, sin estándar y sin peso en la calificación. */
+  informational?: boolean;
 }
 
 export interface CatalogRow {
@@ -63,28 +67,32 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "RESUMEN DE SO'S",
       "responsible": "Gerente",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "manager_6",
       "title": "RESUMEN DE TO'S",
       "responsible": "Gerente",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "manager_7",
       "title": "RESUMEN DE J'S",
       "responsible": "Gerente",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "manager_8",
       "title": "RESUMEN DE PO'S",
       "responsible": "Gerente",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "manager_9",
@@ -112,7 +120,8 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "VENTAS POR VENDEDOR",
       "responsible": "Gerente",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "manager_13",
@@ -147,7 +156,8 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "DESVIOS RELEVANTES DURANTE EL MES: CIERRES, INCIDENCIAS, FALLAS DE INTERNET, LUZ , ETC.",
       "responsible": "Gerente",
       "periodicity": "",
-      "delivery": ""
+      "delivery": "",
+      "informational": true
     }
   ],
   "junior": [
@@ -247,28 +257,32 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "RESUMEN DE SO'S",
       "responsible": "Regional Jr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "junior_15",
       "title": "RESUMEN DE TO'S",
       "responsible": "Regional Jr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "junior_16",
       "title": "RESUMEN DE J'S",
       "responsible": "Regional Jr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "junior_17",
       "title": "RESUMEN DE PO'S",
       "responsible": "Regional Jr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "junior_18",
@@ -289,7 +303,8 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "VENTAS POR VENDEDOR",
       "responsible": "Regional Jr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "junior_21",
@@ -324,7 +339,8 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "DESVIOS RELEVANTES DURANTE EL MES: CIERRES, INCIDENCIAS, FALLAS DE INTERNET, LUZ , ETC.",
       "responsible": "Regional Jr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "informational": true
     }
   ],
   "senior": [
@@ -424,28 +440,32 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "RESUMEN DE SO'S",
       "responsible": "Regional Sr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "senior_15",
       "title": "RESUMEN DE TO'S",
       "responsible": "Regional Sr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "senior_16",
       "title": "RESUMEN DE J'S",
       "responsible": "Regional Sr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "senior_17",
       "title": "RESUMEN DE PO'S",
       "responsible": "Regional Sr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "senior_18",
@@ -466,7 +486,8 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "VENTAS POR VENDEDOR",
       "responsible": "Regional Sr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "critical": true
     },
     {
       "id": "senior_21",
@@ -501,7 +522,8 @@ export const CHECKLISTS: Record<ChecklistRole, ChecklistItem[]> = {
       "title": "DESVIOS RELEVANTES DURANTE EL MES: CIERRES, INCIDENCIAS, FALLAS DE INTERNET, LUZ , ETC.",
       "responsible": "Regional Sr.",
       "periodicity": "Mensual",
-      "delivery": "Cierre de mes"
+      "delivery": "Cierre de mes",
+      "informational": true
     }
   ]
 };

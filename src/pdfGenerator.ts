@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { CHECKLISTS, ROLE_LABELS } from './data';
 import { BRANDS, type BrandId } from './brands';
 import type { Evidence, SavedReport } from './types';
+import { computeScore, parseExpectedCount, scoreLabel } from './scoring';
 
 // Creación y desarrollo original: Josue Sebastian Rea Garcia.
 // Atribución interna de código; no se imprime ni se muestra en el frontend.
@@ -80,11 +81,13 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
   const margin = 12;
   const contentW = pageW - margin * 2;
   const items = CHECKLISTS[report.metadata.role];
+  const reviewableItems = items.filter((item) => !item.informational);
 
   const counts = { complies: 0, not_complies: 0, na: 0, pending: 0 };
-  items.forEach((item) => counts[report.itemStates[item.id]?.status || 'pending']++);
+  reviewableItems.forEach((item) => counts[report.itemStates[item.id]?.status || 'pending']++);
   const reviewed = counts.complies + counts.not_complies + counts.na;
-  const progress = items.length ? Math.round((reviewed / items.length) * 100) : 0;
+  const progress = reviewableItems.length ? Math.round((reviewed / reviewableItems.length) * 100) : 0;
+  const score = computeScore(items, report.itemStates);
 
   let page = 1;
   let y = 0;
@@ -183,19 +186,19 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
         [placeLabel, safeText(placeValue), 'Responsable', safeText(report.metadata.reporterName)],
         ['Fecha', safeText(report.metadata.reportDate), 'Región', safeText(report.metadata.region)],
         ['Regional Sr.', safeText(report.metadata.regionalManager), 'Distrito', safeText(report.metadata.district)],
-        ['Distrital', safeText(report.metadata.districtManager), 'Avance', `${progress}% (${reviewed}/${items.length})`],
+        ['Distrital', safeText(report.metadata.districtManager), 'Avance', `${progress}% (${reviewed}/${reviewableItems.length})`],
       ]
     : report.metadata.role === 'junior'
       ? [
           [placeLabel, safeText(placeValue), 'Responsable', safeText(report.metadata.reporterName)],
           ['Fecha', safeText(report.metadata.reportDate), 'Regional Sr.', safeText(report.metadata.regionalManager)],
           ['Distrito', safeText(report.metadata.district), 'Distrital', safeText(report.metadata.districtManager)],
-          ['Avance', `${progress}% (${reviewed}/${items.length})`, 'Evidencias', String(items.reduce((sum, item) => sum + (report.itemStates[item.id]?.evidences.filter(Boolean).length || 0), 0))],
+          ['Avance', `${progress}% (${reviewed}/${reviewableItems.length})`, 'Evidencias', String(items.reduce((sum, item) => sum + (report.itemStates[item.id]?.evidences.filter(Boolean).length || 0), 0))],
         ]
       : [
           [placeLabel, safeText(placeValue), 'Responsable', safeText(report.metadata.reporterName)],
           ['Fecha', safeText(report.metadata.reportDate), 'Distrito', safeText(report.metadata.district)],
-          ['Gerente Distrital', safeText(report.metadata.districtManager), 'Avance', `${progress}% (${reviewed}/${items.length})`],
+          ['Gerente Distrital', safeText(report.metadata.districtManager), 'Avance', `${progress}% (${reviewed}/${reviewableItems.length})`],
           ['Entregables', String(items.length), 'No cumple', String(counts.not_complies)],
         ];
   rows.forEach((r, i) => {
@@ -206,7 +209,17 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
     doc.setFont('helvetica', 'normal'); doc.setTextColor(...theme.text); doc.text(doc.splitTextToSize(r[3], 56)[0], margin + 119, ry);
   });
 
-  y = 117;
+  y = 112;
+  const scoreTierColor: RGB = score.percent === null ? theme.muted : score.percent >= 95 ? [22, 130, 80] : score.percent >= 85 ? [176, 130, 10] : [176, 40, 40];
+  doc.setFillColor(...theme.primary); doc.roundedRect(margin, y, contentW, 20, 2.5, 2.5, 'F');
+  doc.setFillColor(255, 255, 255); doc.roundedRect(margin + 4, y + 3, 34, 14, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(...scoreTierColor);
+  doc.text(score.percent === null ? '—' : `${score.percent}%`, margin + 21, y + 12.5, { align: 'center' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(255, 255, 255);
+  doc.text(`CALIFICACIÓN PONDERADA · ${scoreLabel(score.percent).toUpperCase()}`, margin + 42, y + 8);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6.6); doc.setTextColor(...theme.border);
+  doc.text(`Promedio ponderado por periodicidad (mensual=1, quincenal=2, semanal=4; entregables clave x2) sobre ${score.consideredItems} entregables aplicables de ${items.length}. Excluidos: ${score.excludedNa} no aplica, ${score.excludedPending} pendientes, ${score.excludedInformational} informativos.`, margin + 42, y + 13, { maxWidth: contentW - 48 });
+  y = 136;
   const metricW = (contentW - 6) / 4;
   [
     ['Cumple', counts.complies],
@@ -219,32 +232,47 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...theme.accent); doc.text(String(value), x + metricW / 2, y + 8, { align: 'center' });
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...theme.muted); doc.text(String(label), x + metricW / 2, y + 13, { align: 'center' });
   });
-  y = 140;
+  y = 159;
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     const state = report.itemStates[item.id] || { status: 'pending', comment: '', evidences: [null, null, null] };
     const images = state.evidences.filter((e): e is Evidence => Boolean(e && e.kind === 'image' && e.dataUrl));
     const attachments = state.evidences.filter((e): e is Evidence => Boolean(e && e.kind !== 'image'));
-    const titleLines = doc.splitTextToSize(`${i + 1}. ${item.title}`, contentW - 44);
+    const expected = item.informational ? 0 : parseExpectedCount(item.periodicity);
+    const titleLines = doc.splitTextToSize(`${i + 1}. ${item.title}${item.critical ? '  (PRIORITARIO x2)' : ''}`, contentW - 44);
     const commentLines = state.comment ? doc.splitTextToSize(`Nota: ${state.comment}`, contentW - 10) : [];
     const imgH = images.length ? 44 : 0;
     const attachH = attachments.length ? attachments.length * 5 + 2 : 0;
-    const rowH = Math.max(24, 12 + titleLines.length * 4 + (commentLines.length ? commentLines.length * 3.7 + 3 : 0) + imgH + attachH);
+    const standardH = expected > 0 ? 5 : 0;
+    const rowH = Math.max(24, 12 + titleLines.length * 4 + standardH + (commentLines.length ? commentLines.length * 3.7 + 3 : 0) + imgH + attachH);
 
     if (y + rowH > pageH - 19) nextPage();
 
     doc.setFillColor(255, 255, 255); doc.setDrawColor(...theme.border); doc.roundedRect(margin, y, contentW, rowH - 2, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8.8); doc.setTextColor(...theme.text); doc.text(titleLines, margin + 5, y + 7);
 
-    const statusLabel = state.status === 'complies' ? 'CUMPLE' : state.status === 'not_complies' ? 'NO CUMPLE' : state.status === 'na' ? 'NO APLICA' : 'PENDIENTE';
-    doc.setFillColor(...theme.light); doc.roundedRect(pageW - margin - 34, y + 4, 29, 7, 1.5, 1.5, 'F');
-    doc.setTextColor(...theme.primary); doc.setFontSize(6.8); doc.text(statusLabel, pageW - margin - 19.5, y + 8.6, { align: 'center' });
+    const statusLabel = item.informational ? 'INFORMATIVO' : state.status === 'complies' ? 'CUMPLE' : state.status === 'not_complies' ? 'NO CUMPLE' : state.status === 'na' ? 'NO APLICA' : 'PENDIENTE';
+    const statusColors: Record<string, [RGB, RGB]> = {
+      complies: [[210, 244, 224], [18, 110, 66]],
+      not_complies: [[252, 214, 214], [153, 32, 32]],
+      na: [[255, 238, 178], [133, 96, 4]],
+      pending: [theme.light, theme.primary],
+      informational: [[233, 236, 240], [80, 94, 108]],
+    };
+    const [badgeBg, badgeText] = statusColors[item.informational ? 'informational' : state.status];
+    doc.setFillColor(...badgeBg); doc.roundedRect(pageW - margin - 34, y + 4, 29, 7, 1.5, 1.5, 'F');
+    doc.setTextColor(...badgeText); doc.setFontSize(6.8); doc.text(statusLabel, pageW - margin - 19.5, y + 8.6, { align: 'center' });
 
     let detailY = y + 9 + titleLines.length * 4;
     if (item.periodicity || item.delivery) {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...theme.muted);
       doc.text(`${item.periodicity ? `Periodicidad: ${item.periodicity}` : ''}${item.periodicity && item.delivery ? '  ·  ' : ''}${item.delivery ? `Entrega: ${item.delivery}` : ''}`, margin + 5, detailY);
+      detailY += 5;
+    }
+    if (expected > 0) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...theme.muted);
+      doc.text(`Estándar: ${expected}/mes  ·  Realizado: ${state.actualCount ?? '—'}`, margin + 5, detailY);
       detailY += 5;
     }
 

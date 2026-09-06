@@ -8,6 +8,7 @@ import SearchSelect from './components/SearchSelect';
 import ReportHistory from './components/ReportHistory';
 import { deleteReport, getReports, saveReport } from './storage';
 import { generateMonthlyPdf } from './pdfGenerator';
+import { computeScore, scoreLabel } from './scoring';
 
 // Creación y desarrollo original: Josue Sebastian Rea Garcia.
 // Esta atribución se mantiene únicamente en el código fuente y no se muestra en la interfaz.
@@ -47,9 +48,12 @@ export default function App() {
 
   const brandConfig = BRANDS[brand];
   const items = CHECKLISTS[role];
-  const reviewed = items.filter((i) => (states[i.id]?.status || 'pending') !== 'pending').length;
-  const progress = items.length ? Math.round((reviewed / items.length) * 100) : 0;
+  const reviewableItems = items.filter((i) => !i.informational);
+  const reviewed = reviewableItems.filter((i) => (states[i.id]?.status || 'pending') !== 'pending').length;
+  const progress = reviewableItems.length ? Math.round((reviewed / reviewableItems.length) * 100) : 0;
   const evidenceCount = items.reduce((sum, i) => sum + (states[i.id]?.evidences.filter(Boolean).length || 0), 0);
+
+  const score = useMemo(() => computeScore(items, states), [items, states]);
 
   const activeCatalog = useMemo(() => catalogForBrand(CATALOG, brand), [brand]);
   const agencyOptions = useMemo(() => activeCatalog.map((r) => r.agency).filter(Boolean), [activeCatalog]);
@@ -171,6 +175,10 @@ export default function App() {
             <div className="brand-switcher" aria-label="Seleccionar marca">
               {(Object.keys(BRANDS) as BrandId[]).map((id) => <button key={id} type="button" className={brand === id ? 'active' : ''} onClick={() => switchBrand(id)}>{BRANDS[id].shortName}</button>)}
             </div>
+            <div className={`score-badge tier-${score.percent === null ? 'none' : score.percent >= 95 ? 'high' : score.percent >= 85 ? 'mid' : 'low'}`}>
+              <strong>{score.percent === null ? '—' : `${score.percent}%`}</strong>
+              <span>Calificación ponderada · {scoreLabel(score.percent)}</span>
+            </div>
             <div className="hero-badge"><ShieldCheck size={25} /><div><strong>Guardado local</strong><span>Sin envío a servidor</span></div></div>
           </div>
         </div>
@@ -182,7 +190,7 @@ export default function App() {
         </section>
 
         <section className="summary-card">
-          <div className="section-heading"><div><span className="eyebrow">CARÁTULA DEL REPORTE · {brandConfig.shortName.toUpperCase()}</span><h2>{ROLE_LABELS[role]} <span>→ {ROLE_DESTINATIONS[role]}</span></h2></div><div className="progress-badge"><strong>{progress}%</strong><span>{reviewed}/{items.length} revisados</span></div></div>
+          <div className="section-heading"><div><span className="eyebrow">CARÁTULA DEL REPORTE · {brandConfig.shortName.toUpperCase()}</span><h2>{ROLE_LABELS[role]} <span>→ {ROLE_DESTINATIONS[role]}</span></h2></div><div className="progress-badge"><strong>{progress}%</strong><span>{reviewed}/{reviewableItems.length} revisados</span></div></div>
           <div className="form-grid">
             {role === 'manager' ? <SearchSelect label="Agencia" value={metadata.agency} options={agencyOptions} placeholder="Buscar agencia por número o nombre" onChange={selectAgency} /> : <SearchSelect label="Región" value={metadata.region} options={regionOptions} placeholder="Buscar región" onChange={selectRegion} />}
             <label className="field"><span>Nombre del responsable</span><input value={metadata.reporterName} onChange={(e) => updateMetadata({ reporterName: e.target.value })} placeholder={`Nombre del ${ROLE_LABELS[role]}`} /></label>

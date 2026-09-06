@@ -18,6 +18,7 @@ export interface ItemState {
   status: ComplianceStatus;
   comment: string;
   evidences: Array<Evidence | null>;
+  actualCount?: number;
 }
 
 export interface ReportMetadata {
