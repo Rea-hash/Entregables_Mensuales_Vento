@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import { CHECKLISTS, ROLE_LABELS } from './data';
 import { BRANDS, type BrandId } from './brands';
 import type { Evidence, SavedReport } from './types';
-import { computeScore, parseExpectedCount, scoreLabel } from './scoring';
+import { computeContributions, computeScore, parseExpectedCount, scoreLabel } from './scoring';
 
 // Creación y desarrollo original: Josue Sebastian Rea Garcia.
 // Atribución interna de código; no se imprime ni se muestra en el frontend.
@@ -88,6 +88,7 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
   const reviewed = counts.complies + counts.not_complies + counts.na;
   const progress = reviewableItems.length ? Math.round((reviewed / reviewableItems.length) * 100) : 0;
   const score = computeScore(items, report.itemStates);
+  const contributions = computeContributions(items, report.itemStates);
 
   let page = 1;
   let y = 0;
@@ -271,8 +272,10 @@ export async function generateMonthlyPdf(report: SavedReport): Promise<jsPDF> {
       detailY += 5;
     }
     if (expected > 0) {
+      const contribution = contributions[item.id];
+      const contributionText = contribution === null || contribution === undefined ? '' : `  ·  Aporte a la calificación: ${contribution > 0 ? '+' : ''}${contribution}%`;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...theme.muted);
-      doc.text(`Estándar: ${expected}/mes  ·  Realizado: ${state.actualCount ?? '—'}`, margin + 5, detailY);
+      doc.text(`Estándar: ${expected}/mes  ·  Realizado: ${state.actualCount ?? '—'}${contributionText}`, margin + 5, detailY);
       detailY += 5;
     }
 

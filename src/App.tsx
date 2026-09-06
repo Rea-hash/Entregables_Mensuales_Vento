@@ -8,7 +8,7 @@ import SearchSelect from './components/SearchSelect';
 import ReportHistory from './components/ReportHistory';
 import { deleteReport, getReports, saveReport } from './storage';
 import { generateMonthlyPdf } from './pdfGenerator';
-import { computeScore, scoreLabel } from './scoring';
+import { computeContributions, computeScore, scoreLabel } from './scoring';
 
 // Creación y desarrollo original: Josue Sebastian Rea Garcia.
 // Esta atribución se mantiene únicamente en el código fuente y no se muestra en la interfaz.
@@ -54,6 +54,7 @@ export default function App() {
   const evidenceCount = items.reduce((sum, i) => sum + (states[i.id]?.evidences.filter(Boolean).length || 0), 0);
 
   const score = useMemo(() => computeScore(items, states), [items, states]);
+  const contributions = useMemo(() => computeContributions(items, states), [items, states]);
 
   const activeCatalog = useMemo(() => catalogForBrand(CATALOG, brand), [brand]);
   const agencyOptions = useMemo(() => activeCatalog.map((r) => r.agency).filter(Boolean), [activeCatalog]);
@@ -206,7 +207,7 @@ export default function App() {
         <div className="checklist-heading"><div><span className="eyebrow">ENTREGABLES MENSUALES</span><h2>Revisión y evidencia</h2><p>Cada punto admite hasta 3 evidencias: imágenes, archivos o enlaces.</p></div></div>
 
         <section className="checklist-list">
-          {items.map((item, index) => <ChecklistCard key={item.id} item={item} index={index} state={states[item.id] || { status: 'pending', comment: '', evidences: [null, null, null] }} onChange={(state) => { setStates((prev) => ({ ...prev, [item.id]: state })); setDirty(true); }} />)}
+          {items.map((item, index) => <ChecklistCard key={item.id} item={item} index={index} state={states[item.id] || { status: 'pending', comment: '', evidences: [null, null, null] }} contribution={contributions[item.id] ?? null} onChange={(state) => { setStates((prev) => ({ ...prev, [item.id]: state })); setDirty(true); }} />)}
         </section>
 
         <section className="action-bar">

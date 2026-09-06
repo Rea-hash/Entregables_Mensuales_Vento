@@ -8,6 +8,7 @@ interface Props {
   item: ChecklistItem;
   index: number;
   state: ItemState;
+  contribution: number | null;
   onChange: (state: ItemState) => void;
 }
 
@@ -24,7 +25,7 @@ const statusLabels: Record<ComplianceStatus, string> = {
   na: 'No aplica',
 };
 
-export default function ChecklistCard({ item, index, state, onChange }: Props) {
+export default function ChecklistCard({ item, index, state, contribution, onChange }: Props) {
   const setEvidence = (slot: number, evidence: Evidence | null) => {
     const evidences = [...state.evidences];
     evidences[slot] = evidence;
@@ -69,6 +70,11 @@ export default function ChecklistCard({ item, index, state, onChange }: Props) {
       {expected > 0 && (
         <div className="standard-row">
           <label><span>Veces realizado este mes</span><input type="number" min={0} value={state.actualCount ?? ''} onChange={(e) => setActualCount(e.target.value)} placeholder="0" /></label>
+          {contribution !== null && (
+            <span className={`contribution-chip ${contribution > 0 ? 'positive' : 'zero'}`} title="Puntos que este entregable aporta a la calificación total del header">
+              Aporte a la calificación: {contribution > 0 ? '+' : ''}{contribution}%
+            </span>
+          )}
           {suggestionDiffers && (
             <button type="button" className="suggestion-hint" onClick={() => onChange({ ...state, status: suggestion!.status })}>
               Sugerido: {statusLabels[suggestion!.status]} ({suggestion!.reason}) · aplicar

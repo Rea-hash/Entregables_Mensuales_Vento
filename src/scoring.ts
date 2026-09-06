@@ -100,6 +100,47 @@ export function computeScore(items: ChecklistItem[], states: Record<string, Item
   };
 }
 
+/**
+ * Reparte el porcentaje final entre los ítems que sí cumplieron, proporcional a su peso,
+ * usando el método de resto mayor (Hamilton): cada aporte es un entero y la suma de todos
+ * los aportes es exactamente igual a `computeScore(...).percent` — el mismo número del badge.
+ * Los ítems "No cumple" aportan 0 (restan peso al total sin sumar puntos); los excluidos
+ * (No aplica, pendientes, informativos) no tienen aporte (null).
+ */
+export function computeContributions(items: ChecklistItem[], states: Record<string, ItemState>): Record<string, number | null> {
+  const score = computeScore(items, states);
+  const contributions: Record<string, number | null> = {};
+  const compliant: Array<{ id: string; weight: number }> = [];
+
+  for (const item of items) {
+    const weight = getItemWeight(item);
+    if (weight === 0) { contributions[item.id] = null; continue; }
+    const status = states[item.id]?.status || 'pending';
+    if (status === 'na' || status === 'pending') { contributions[item.id] = null; continue; }
+    if (status === 'not_complies') { contributions[item.id] = 0; continue; }
+    compliant.push({ id: item.id, weight });
+  }
+
+  if (!compliant.length || !score.percent || score.earnedWeight === 0) {
+    compliant.forEach((c) => { contributions[c.id] = 0; });
+    return contributions;
+  }
+
+  const quotas = compliant.map((c) => (c.weight / score.earnedWeight) * score.percent);
+  const floors = quotas.map((q) => Math.floor(q));
+  let remainder = score.percent - floors.reduce((a, b) => a + b, 0);
+  const order = quotas
+    .map((q, idx) => ({ idx, frac: q - floors[idx] }))
+    .sort((a, b) => b.frac - a.frac);
+
+  const finalValues = [...floors];
+  for (let k = 0; k < order.length && remainder > 0; k++, remainder--) {
+    finalValues[order[k].idx] += 1;
+  }
+  compliant.forEach((c, idx) => { contributions[c.id] = finalValues[idx]; });
+  return contributions;
+}
+
 export function scoreLabel(percent: number | null): string {
   if (percent === null) return 'Sin calificar';
   if (percent >= 95) return 'Óptimo';
