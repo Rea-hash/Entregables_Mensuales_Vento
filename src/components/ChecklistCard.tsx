@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react';
 import type { ChecklistItem } from '../data';
 import type { ComplianceStatus, Evidence, ItemState } from '../types';
-import { parseExpectedCount, suggestStatus } from '../scoring';
+import { getItemWeight, parseExpectedCount, suggestStatus } from '../scoring';
 import EvidenceSlot from './EvidenceSlot';
 
 interface Props {
@@ -33,6 +33,7 @@ export default function ChecklistCard({ item, index, state, contribution, onChan
   };
 
   const expected = item.informational ? 0 : parseExpectedCount(item.periodicity);
+  const weight = getItemWeight(item);
   const suggestion = expected > 0 ? suggestStatus(item, state.actualCount) : null;
   const suggestionDiffers = Boolean(suggestion && suggestion.status !== state.status);
 
@@ -57,6 +58,9 @@ export default function ChecklistCard({ item, index, state, contribution, onChan
             {item.periodicity && <span>Periodicidad: <strong>{item.periodicity}</strong></span>}
             {item.delivery && <span>Entrega: <strong>{item.delivery}</strong></span>}
             {expected > 0 && <span>Estándar: <strong>{expected}/mes</strong></span>}
+            {weight > 0 && (
+              <span>Peso en la calificación: <strong>{weight}</strong>{item.critical && <em className="weight-note"> (base {expected} ×2 prioritario)</em>}</span>
+            )}
           </div>
         </div>
         {!item.informational && (
